@@ -1,22 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="script.js" defer></script>
+  <meta charset="UTF-8" />
+  <title>Habit Tracker</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-         <h1>Habit tracker</h1>
 
-         <div class="add habit">    
-            <input type="text" id="habitInput" placeholder="Nowy nawyk">
-            <button id="addHabitBtn">Dodaj</button> 
-        </div>
-        <ul id="habitList"></ul>
+  <header>
+    <h1>Habit Tracker</h1>
+    <button id="darkModeToggle">🌙</button>
+  </header>
 
-        <script src="script.js"></script>
-         
+  <section class="add-habit">
+    <form id="habit-form">
+      <input id="habit-input" placeholder="Nowy nawyk..." />
+      <button>Dodaj</button>
+    </form>
+  </section>
+
+  <section class="stats">
+    <p id="statsText">Brak danych</p>
+    <div class="progress-container">
+  <div id="progress-bar"></div>
+</div>
+
+  </section>
+
+  <section class="calendar">
+    <h2>Kalendarz</h2>
+    <div id="calendar"></div>
+  </section>
+
+  <section class="habits">
+    <h2>Nawyki</h2>
+    <ul id="habit-list"></ul>
+  </section>
+
+  <script src="script.js"></script>
 </body>
 </html>
