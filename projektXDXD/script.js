@@ -1,159 +1,176 @@
-const habitInput = document.getElementById("habitInput");
-const addHabitBtn = document.getElementById("addHabitBtn");
-const habitList = document.getElementById("habitList");
-    let habits=[];
-    function renderHabit(){
-        habitList.innerHTML ="";
-        habits.forEach((habit,index)=>{
-            const li = document.createElement("li");
+const habitForm = document.getElementById("habit-form");
+const habitInput = document.getElementById("habit-input");
+const habitList = document.getElementById("habit-list");
+const calendar = document.getElementById("calendar");
+const statsText = document.getElementById("statsText");
+const darkToggle = document.getElementById("darkModeToggle");
 
-            li.innerHTML = 
-            <span>${habit.name}(🔥${habit.streak})</span>;   
-            <button>${habit.completedToday ? "✔" : "❌"}</button>;
-            
-            li.querySelector("button").addEventListener("click",()=>{
-                ToggleHabbit(index);
-            });
-            habitlist.appendChild(li)   
-        })
+let habits = JSON.parse(localStorage.getItem("habits")) || [];
+let editId = null;
 
+const today = new Date().toLocaleDateString();
+
+// ================= RESET DNIA =================
+function resetDaily() {
+  habits.forEach(h => {
+    if (h.lastUpdated !== today) {
+      h.completedToday = false;
+      h.lastUpdated = today;
     }
+  });
+  save();
+}
+
+// ================= STORAGE =================
+function save() {
+  localStorage.setItem("habits", JSON.stringify(habits));
+}
+
+// ================= RENDER =================
+function renderHabits() {
+  habitList.innerHTML = "";
+
+  habits.forEach(h => {
+    const streak = calculateStreak(h);
+
+    const li = document.createElement("li");
+    li.className = "habit-card";
+    if (h.completedToday) li.classList.add("completed");
+
+    li.innerHTML = `
+      <div>
+        <strong>${h.name}</strong>
+        <div class="streak">🔥 Streak: ${streak} dni</div>
+      </div>
+      <div class="habit-actions">
+        <button onclick="toggleHabit('${h.id}')">✔</button>
+        <button onclick="editHabit('${h.id}')">✏</button>
+        <button onclick="deleteHabit('${h.id}')">🗑</button>
+      </div>
+    `;
+    habitList.appendChild(li);
+  });
+
+  renderStats();
+  renderProgress();
+}
 
 
-    addHabitBtn.addEventListener("click",()=>{
-        const habitName = habitInput.value;
-        if(habitName === "")return;
+// ================= DODAWANIE =================
+habitForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const name = habitInput.value.trim();
+  if (!name) return;
 
-        habits.push({
-            name: habitName,
-            completedToday :false,
-            streak: 0
-        });
-        habitInput.value="";
-        renderHabit();
-    })
-    function ToggleHabbit(){
-        const habit = habits[index];
+  if (editId) {
+    habits.find(h => h.id === editId).name = name;
+    editId = null;
+  } else {
+    habits.push({
+      id: crypto.randomUUID(),
+      name,
+      completedToday: false,
+      history: {},
+      lastUpdated: today
+    });
+  }
 
-        habit.completedToday = habit.completedToday;
+  habitInput.value = "";
+  save();
+  renderHabits();
+});
 
-        if(habit.completedToday){
-            habit.streak++
-        }else{
-            habit.streak = 0
-        }
-        renderHabit;
+// ================= AKCJE =================
+function toggleHabit(id) {
+  const habit = habits.find(h => h.id === id);
+  habit.completedToday = !habit.completedToday;
+  habit.history[today] = habit.completedToday;
+  save();
+  renderHabits();
+}
+
+function deleteHabit(id) {
+  habits = habits.filter(h => h.id !== id);
+  save();
+  renderHabits();
+}
+
+function editHabit(id) {
+  const habit = habits.find(h => h.id === id);
+  habitInput.value = habit.name;
+  editId = id;
+}
+
+// ================= STATYSTYKI =================
+function renderStats() {
+  const done = habits.filter(h => h.completedToday).length;
+  statsText.textContent = `Dzisiaj wykonane: ${done}/${habits.length}`;
+}
+
+// ================= KALENDARZ =================
+function renderCalendar() {
+  calendar.innerHTML = "";
+  const now = new Date();
+  const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+
+  for (let d = 1; d <= days; d++) {
+    const date = new Date(now.getFullYear(), now.getMonth(), d)
+      .toLocaleDateString();
+
+    const div = document.createElement("div");
+    div.className = "day";
+    div.textContent = d;
+
+    if (habits.some(h => h.history[date])) {
+      div.classList.add("done");
     }
-    function saveHabits(){
-        localStorage.setItem("habits",JSON.stringify(habits));
+    calendar.appendChild(div);
+  }
+}
+
+// ================= DARK MODE =================
+if (localStorage.getItem("theme") === "dark") {
+  document.body.classList.add("dark-mode");
+}
+
+darkToggle.onclick = () => {
+  document.body.classList.toggle("dark-mode");
+  localStorage.setItem(
+    "theme",
+    document.body.classList.contains("dark-mode") ? "dark" : "light"
+  );
+};
+function calculateStreak(habit) {
+  let streak = 0;
+  let date = new Date();
+
+  while (true) {
+    const key = date.toLocaleDateString();
+    if (habit.history[key]) {
+      streak++;
+      date.setDate(date.getDate() - 1);
+    } else {
+      break;
     }
-    function loadHabits(){
-        const data = localStorage.getItem("Habits");
-        if(data){
-            habits = JSON.parse(data)
-            renderHabit();
-        }
+  }
+  return streak;
+}
+function renderProgress() {
+  const bar = document.getElementById("progress-bar");
+  if (habits.length === 0) {
+    bar.style.width = "0%";
+    return;
+  }
 
-    }
-function getToday() {
-        return new Date().toISOString().split("T")[0];
-      }
-      habits.push({
-        name: habitName,
-        history: {}
-      });
-      function getLast7Days() {
-        const days = [];
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          days.push(date.toISOString().split("T")[0]);
-        }
-        return days;
-      }
-      function renderHabits() {
-        habitList.innerHTML = "";
-      
-        const days = getLast7Days();
-      
-        habits.forEach((habit, habitIndex) => {
-          const li = document.createElement("li");
-      
-          let calendarHTML = `<div class="calendar">`;
-      
-          days.forEach(day => {
-            const done = habit.history[day];
-            calendarHTML += `
-              <div 
-                class="day ${done ? "done" : ""}" 
-                data-day="${day}"
-              ></div>
-            `;
-          });
-      
-          calendarHTML += `</div>`;
-      
-          li.innerHTML = `
-            <strong>${habit.name}</strong>
-            ${calendarHTML}
-          `;
-      
-          const dayElements = li.querySelectorAll(".day");
-      
-          dayElements.forEach((dayEl, dayIndex) => {
-            dayEl.addEventListener("click", () => {
-              toggleDay(habitIndex, days[dayIndex]);
-            });
-          });
-      
-          habitList.appendChild(li);
-        });
-      }
-      function toggleDay(habitIndex, day) {
-        const habit = habits[habitIndex];
-      
-        if (habit.history[day]) {
-          delete habit.history[day];
-        } else {
-          habit.history[day] = true;
-        }
-      
-        saveHabits();
-        renderHabits();
-      }
-        function calculateStreak(habit) {
-        let streak = 0;
-        let date = new Date();
+  const done = habits.filter(h => h.completedToday).length;
+  const percent = (done / habits.length) * 100;
+  bar.style.width = percent + "%";
+}
 
-        while (true) {
-            const day = date.toISOString().split("T")[0];
-            if (habit.history[day]) {
-            streak++;
-            date.setDate(date.getDate() - 1);
-            } else {
-            break;
-            }
-        }
 
-        return streak;
-        }
-        function calculateStreak(habit) {
-            let streak = 0;
-            let date = new Date();
-        
-            while (true) {
-            const day = date.toISOString().split("T")[0];
-            if (habit.history[day]) {
-                streak++;
-                date.setDate(date.getDate() - 1);
-            } else {
-                break;
-            }
-            }
-        
-            return streak;
-        }
-        const streak = calculateStreak(habit);
-        <strong>${habit.name} 🔥 ${streak}</strong>
 
-    loadHabits();
+
+resetDaily();
+renderHabits();
+renderCalendar();
+renderStats();
